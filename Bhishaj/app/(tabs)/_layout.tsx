@@ -49,7 +49,7 @@ const _layout = () => {
         <Tabs.Screen
         name="index"
         options={{
-            title: 'Home',
+            title: 'Homo',
             tabBarIcon: ({ color, size, focused }) => (
               <View className={`p-2.5 rounded-xl ${focused ? 'bg-indigo-50 shadow-sm' : ''}`} style={{
                 transform: [{ scale: focused ? 1.1 : 1 }],
