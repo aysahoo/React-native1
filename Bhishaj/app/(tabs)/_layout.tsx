@@ -1,7 +1,8 @@
-import { View, Text } from 'react-native'
+import { View, Text, Pressable } from 'react-native'
 import React from 'react'
 import { Tabs } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs'
 
 const _layout = () => {
   return (
@@ -34,6 +35,7 @@ const _layout = () => {
           fontWeight: '700',
           marginTop: 6,
           letterSpacing: 0.5,
+          display: 'none',
         },
         tabBarIconStyle: {
           marginBottom: 0,
@@ -42,8 +44,19 @@ const _layout = () => {
         tabBarItemStyle: {
           paddingHorizontal: 8,
           paddingVertical: 4,
+          justifyContent: 'center',
+          alignItems: 'center',
         },
         headerShown: false,
+        tabBarButton: (props: BottomTabBarButtonProps) => (
+          <Pressable
+            onPress={props.onPress}
+            style={props.style}
+            android_ripple={null}
+          >
+            {props.children}
+          </Pressable>
+        ),
       }}
     >
         <Tabs.Screen
