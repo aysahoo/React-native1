@@ -21,7 +21,11 @@ export default function TabTwoScreen() {
         />
       }>
       <ThemedView style={styles.titleContainer}>
+<<<<<<< Updated upstream
         <ThemedText type="title">Ankit Kumar Love</ThemedText>
+=======
+        <ThemedText type="title">AnkitKumar</ThemedText>
+>>>>>>> Stashed changes
       </ThemedView>
       <ThemedText>This app includes example code to help you get started.</ThemedText>
       <Collapsible title="File-based routing">
