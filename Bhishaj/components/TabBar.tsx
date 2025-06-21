@@ -1,6 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { View, Pressable, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../contexts/ThemeContext';
+import { lightColors, darkColors } from '../constants/colors';
 
 const FOCUS_OPTIONS = [
   { name: 'Search', icon: 'search' },
@@ -13,6 +15,9 @@ interface TabBarProps {
 }
 
 const TabBar: React.FC<TabBarProps> = ({ activeFocus, onTabSwitch }) => {
+  const { isDark } = useTheme();
+  const colors = isDark ? darkColors : lightColors;
+  
   const [tabBarWidth, setTabBarWidth] = useState(0);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const tabBarRef = useRef<View>(null);
@@ -41,8 +46,11 @@ const TabBar: React.FC<TabBarProps> = ({ activeFocus, onTabSwitch }) => {
   return (
     <View 
       ref={tabBarRef}
-      className="flex-row bg-gray-200/60 rounded-lg p-1 relative"
-      style={{ width: 120 }}
+      style={{ 
+        backgroundColor: colors.surfaceSecondary,
+        width: 120
+      }}
+      className="flex-row rounded-lg p-1 relative"
       onLayout={(event) => {
         const { width } = event.nativeEvent.layout;
         if (width > 0) {
@@ -59,11 +67,11 @@ const TabBar: React.FC<TabBarProps> = ({ activeFocus, onTabSwitch }) => {
             left: 2,
             width: tabWidth - 4,
             height: '100%',
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            backgroundColor: colors.surface,
             borderRadius: 6,
             borderWidth: 1,
-            borderColor: '#a28ff9',
-            shadowColor: '#000',
+            borderColor: colors.primary,
+            shadowColor: colors.shadow,
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.1,
             shadowRadius: 4,
@@ -89,7 +97,7 @@ const TabBar: React.FC<TabBarProps> = ({ activeFocus, onTabSwitch }) => {
           <Ionicons 
             name={option.icon as any} 
             size={20} 
-            color={activeFocus === option.name ? '#a28ff9' : '#6b7280'} 
+            color={activeFocus === option.name ? colors.primary : colors.textSecondary} 
           />
         </Pressable>
       ))}

@@ -5,6 +5,11 @@ import GradientBackground from '../GradientBackground';
 import { useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
+import { useTheme } from '../../contexts/ThemeContext';
+import { lightColors, darkColors } from '../../constants/colors';
+
+// Import types
+import { Message, ChatSession } from '../../types';
 
 // Import components
 import ChatMessage from '../../components/ChatMessage';
@@ -13,23 +18,6 @@ import AttachmentOptions from '../../components/AttachmentOptions';
 import AttachmentPreview from '../../components/AttachmentPreview';
 import ChatHistoryPanel from '../../components/ChatHistoryPanel';
 
-type Message = {
-  id: string;
-  text: string;
-  sender: 'user' | 'bot';
-  attachment?: {
-    name: string;
-    type: string;
-    uri: string;
-  };
-};
-
-type ChatSession = {
-  id: string;
-  title: string;
-  messages: Message[];
-};
-
 const SUGGESTIONS = [
     { text: 'Medicines', icon: 'medkit-outline' },
     { text: 'Remedies', icon: 'home-outline' },
@@ -37,6 +25,9 @@ const SUGGESTIONS = [
 ];
 
 const Discover = () => {
+  const { isDark } = useTheme();
+  const colors = isDark ? darkColors : lightColors;
+  
   const [topic, setTopic] = useState('');
   const [activeFocus, setActiveFocus] = useState('Search');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -357,75 +348,118 @@ const Discover = () => {
       style={{ flex: 1 }}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <View className="flex-1 px-4">
-        <View className="flex-row justify-between items-center pt-12 pb-2 z-10">
+      <View style={{ flex: 1, paddingHorizontal: 16 }}>
+        {/* Header */}
+        <View style={{ 
+          flexDirection: 'row', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          paddingTop: 48, 
+          paddingBottom: 8, 
+          zIndex: 10 
+        }}>
           <Pressable 
             onPress={toggleHistoryPanel} 
-            className="bg-white/50 rounded-full p-3"
+            style={{ backgroundColor: colors.surfaceSecondary }}
+            className="rounded-full p-3"
             accessibilityLabel="Open chat history"
             accessibilityRole="button"
           >
-            <Ionicons name="list-outline" size={24} color="#6b7280" />
+            <Ionicons name="list-outline" size={24} color={colors.textSecondary} />
           </Pressable>
-          <View className="flex-row gap-x-4">
+          <View style={{ flexDirection: 'row', gap: 16 }}>
             <Pressable 
               onPress={() => router.push('/habits')} 
-              className="bg-white/50 rounded-full p-3"
+              style={{ backgroundColor: colors.surfaceSecondary }}
+              className="rounded-full p-3"
               accessibilityLabel="Open habits"
               accessibilityRole="button"
             >
-              <Image source={require('../../assets/icons/cards.png')} style={{ width: 24, height: 24 }} />
+              <Image 
+                source={require('../../assets/icons/cards.png')} 
+                style={{ 
+                  width: 24, 
+                  height: 24,
+                  tintColor: colors.textSecondary 
+                }} 
+              />
             </Pressable>
             <Pressable 
               onPress={handleNewChat} 
-              className="bg-white/50 rounded-full p-3"
+              style={{ backgroundColor: colors.surfaceSecondary }}
+              className="rounded-full p-3"
               accessibilityLabel="Start new chat"
               accessibilityRole="button"
             >
-              <Ionicons name="add" size={24} color="#6b7280" />
+              <Ionicons name="add" size={24} color={colors.textSecondary} />
             </Pressable>
           </View>
         </View>
 
+        {/* Messages List */}
         <FlatList
           data={activeMessages}
           renderItem={({ item }) => <ChatMessage item={item} />}
           keyExtractor={(item) => item.id}
-          className="flex-1"
+          style={{ flex: 1 }}
           contentContainerStyle={{ paddingBottom: 10 }}
           showsVerticalScrollIndicator={false}
           ref={flatListRef}
         />
 
+        {/* Suggestions */}
         {showSuggestions && (
-          <View className="mb-2 self-start" style={{ width: '66%' }}>
+          <View style={{ marginBottom: 8, alignSelf: 'flex-start', width: '66%' }}>
             <Pressable
               onPress={() => handleSuggestionPress(typingSuggestions[0])}
-              className="bg-white/20 rounded-2xl p-3 border border-white/30"
+              style={{ 
+                backgroundColor: colors.surfaceSecondary,
+                borderColor: colors.borderLight,
+                borderRadius: 16,
+                padding: 12,
+                borderWidth: 1
+              }}
             >
-              <Text className="text-gray-600 text-base"> {typingSuggestions[0]}</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 16 }}> {typingSuggestions[0]}</Text>
             </Pressable>
           </View>
         )}
 
+        {/* Attachment Preview */}
         <AttachmentPreview 
           attachments={currentAttachments}
           onRemoveAttachment={removeAttachment}
         />
 
-        <View className="flex-row items-center bg-white/50 rounded-2xl p-2 mb-10">
+        {/* Input Bar */}
+        <View style={{ 
+          backgroundColor: colors.surfaceSecondary,
+          borderColor: colors.borderLight,
+          flexDirection: 'row',
+          alignItems: 'center',
+          borderRadius: 16,
+          padding: 8,
+          marginBottom: 40,
+          borderWidth: 1
+        }}>
           <TextInput
-            className="flex-1 text-lg text-gray-800 p-3"
+            style={{ 
+              color: colors.textPrimary, 
+              textAlignVertical: 'top',
+              flex: 1,
+              fontSize: 18,
+              padding: 12
+            }}
             placeholder="Ask anything..."
-            placeholderTextColor="rgb(156 163 175)"
+            placeholderTextColor={colors.textTertiary}
             value={topic}
             onChangeText={handleTextChange}
             multiline
           />
-          <View className="flex-row items-center gap-x-2 mr-2">
-            <View className="relative">
-              <Pressable onPress={handleAttachment} className="p-2">
-                <Ionicons name="attach" size={24} color="#6b7280" />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: 8 }}>
+            <View style={{ position: 'relative' }}>
+              <Pressable onPress={handleAttachment} style={{ padding: 8 }}>
+                <Ionicons name="attach" size={24} color={colors.textSecondary} />
               </Pressable>
               <AttachmentOptions
                 showAttachmentOptions={showAttachmentOptions}
@@ -434,8 +468,13 @@ const Discover = () => {
                 onDocumentPick={handleDocumentPick}
               />
             </View>
-            <Ionicons name="scan" size={22} color="#6b7280" />
-            <Pressable className="bg-[#a28ff9] rounded-lg p-3" onPress={handleSendMessage}>
+            <Pressable 
+              onPress={() => router.push('/xray')}
+              style={{ padding: 8 }}
+            >
+              <Ionicons name="scan" size={22} color={colors.textSecondary} />
+            </Pressable>
+            <Pressable style={{ backgroundColor: colors.primary }} className="rounded-lg p-3" onPress={handleSendMessage}>
               <Ionicons name="paper-plane-outline" size={22} color="white" />
             </Pressable>
           </View>
@@ -445,46 +484,85 @@ const Discover = () => {
   );
 
   const renderInitialView = () => (
-    <View className="flex-1 justify-center px-4">
-      <View className="mb-4 items-center">
-        <Text style={{fontFamily: 'Cormorant-SemiBold'}} className="text-6xl text-black/60">Hello Anshuman,</Text>
+    <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 16 }}>
+      {/* Greeting */}
+      <View style={{ alignItems: 'center', marginBottom: 16 }}>
+        <Text style={{
+          fontFamily: 'Cormorant-SemiBold', 
+          color: colors.textPrimary,
+          fontSize: 48
+        }}>Hello Anshuman,</Text>
       </View>
       
+      {/* Suggestions */}
       {showSuggestions && (
-        <View className="mb-2 self-start" style={{ width: '66%' }}>
+        <View style={{ marginBottom: 8, alignSelf: 'flex-start', width: '66%' }}>
           <Pressable
             onPress={() => handleSuggestionPress(typingSuggestions[0])}
-            className="bg-white/20 rounded-2xl border p-3 border-white/30"
+            style={{ 
+              backgroundColor: colors.surfaceSecondary,
+              borderColor: colors.borderLight,
+              borderRadius: 16,
+              padding: 12,
+              borderWidth: 1
+            }}
           >
-            <Text className="text-gray-600 text-base"> {typingSuggestions[0]}</Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 16 }}> {typingSuggestions[0]}</Text>
           </Pressable>
         </View>
       )}
       
-      <View className="bg-white/50 rounded-2xl p-6 shadow-md mb-8">
+      {/* Main Input Card */}
+      <View style={{ 
+        backgroundColor: colors.surfaceSecondary,
+        borderColor: colors.borderLight,
+        borderRadius: 16,
+        padding: 24,
+        marginBottom: 16,
+        borderWidth: 1,
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 3
+      }}>
         <AttachmentPreview 
           attachments={currentAttachments}
           onRemoveAttachment={removeAttachment}
         />
         <TextInput
-          className="text-lg text-gray-800 h-20"
-          style={{textAlignVertical: 'top'}}
+          style={{ 
+            color: colors.textPrimary, 
+            textAlignVertical: 'top',
+            fontSize: 18,
+            height: 80
+          }}
           placeholder="Ask anything..."
-          placeholderTextColor="rgb(156 163 175)"
+          placeholderTextColor={colors.textTertiary}
           value={topic}
           onChangeText={handleTextChange}
           multiline
         />
-        <View className="flex-row justify-between items-center mt-4">
+        <View style={{ 
+          flexDirection: 'row', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginTop: 16 
+        }}>
           <TabBar 
             activeFocus={activeFocus}
             onTabSwitch={handleTabSwitch}
           />
-          <View className="flex-row items-center gap-x-4">
-            <Ionicons name="scan-outline" size={22} color="#6b7280" />
-            <View className="relative">
-              <Pressable onPress={handleAttachment} className="p-2">
-                <Ionicons name="attach" size={22} color="#6b7280" />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+            <Pressable 
+              onPress={() => router.push('/xray')}
+              style={{ padding: 8 }}
+            >
+              <Ionicons name="scan-outline" size={22} color={colors.textSecondary} />
+            </Pressable>
+            <View style={{ position: 'relative' }}>
+              <Pressable onPress={handleAttachment} style={{ padding: 8 }}>
+                <Ionicons name="attach" size={22} color={colors.textSecondary} />
               </Pressable>
               <AttachmentOptions
                 showAttachmentOptions={showAttachmentOptions}
@@ -493,23 +571,36 @@ const Discover = () => {
                 onDocumentPick={handleDocumentPick}
               />
             </View>
-            <Pressable className="bg-[#a28ff9] rounded-lg p-2" onPress={handleSendMessage}>
+            <Pressable style={{ backgroundColor: colors.primary }} className="rounded-lg p-2" onPress={handleSendMessage}>
               <Ionicons name="paper-plane-outline" size={22} color="white" />
             </Pressable>
           </View>
         </View>
       </View>
 
-      <View className="flex-row flex-wrap gap-3 justify-center mb-12">
+      {/* Quick Suggestions */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: 48 }}>
         {SUGGESTIONS.map(suggestion => (
-          <Pressable key={suggestion.text} className="bg-white/40 p-3 rounded-lg flex-row items-center gap-x-2">
-            <Ionicons name={suggestion.icon as any} size={16} color="#6b7280" />
-            <Text className="text-gray-600 font-semibold text-md">{suggestion.text}</Text>
+          <Pressable 
+            key={suggestion.text} 
+            style={{ 
+              backgroundColor: colors.surfaceSecondary,
+              paddingHorizontal: 14,
+              paddingVertical: 10,
+              borderRadius: 10,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6
+            }}
+          >
+            <Ionicons name={suggestion.icon as any} size={12} color={colors.textSecondary} />
+            <Text style={{ color: colors.textSecondary, fontWeight: '500', fontSize: 14 }}>{suggestion.text}</Text>
           </Pressable>
         ))}
       </View>
 
-      <View className="absolute bottom-24 self-center">
+      {/* Floating Habits Button */}
+      <View style={{ position: 'absolute', bottom: 96, alignSelf: 'center' }}>
         <Animated.View
           style={{
             transform: [
@@ -522,8 +613,19 @@ const Discover = () => {
             ],
           }}
         >
-          <Pressable className="bg-white/50 rounded-full w-14 h-14 items-center justify-center" onPress={() => router.push('/habits')}>
-            <Image source={require('../../assets/icons/cards.png')} style={{ width: 32, height: 32, tintColor: '#6b7280' }} />
+          <Pressable 
+            style={{ backgroundColor: colors.surfaceSecondary }}
+            className="rounded-full w-14 h-14 items-center justify-center" 
+            onPress={() => router.push('/habits')}
+          >
+            <Image 
+              source={require('../../assets/icons/cards.png')} 
+              style={{ 
+                width: 32, 
+                height: 32,
+                tintColor: colors.textSecondary 
+              }} 
+            />
           </Pressable>
         </Animated.View>
       </View>

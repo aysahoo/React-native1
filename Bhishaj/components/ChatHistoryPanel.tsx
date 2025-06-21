@@ -1,12 +1,9 @@
 import React from 'react';
 import { View, Text, Pressable, ScrollView, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-type ChatSession = {
-  id: string;
-  title: string;
-  messages: any[];
-};
+import { Message, ChatSession } from '../types';
+import { useTheme } from '../contexts/ThemeContext';
+import { lightColors, darkColors } from '../constants/colors';
 
 interface ChatHistoryPanelProps {
   isHistoryOpen: boolean;
@@ -27,6 +24,9 @@ const ChatHistoryPanel: React.FC<ChatHistoryPanelProps> = ({
   onSwitchActiveSession,
   onDeleteSession,
 }) => {
+  const { isDark } = useTheme();
+  const colors = isDark ? darkColors : lightColors;
+
   if (!isHistoryOpen) return null;
 
   return (
@@ -51,11 +51,11 @@ const ChatHistoryPanel: React.FC<ChatHistoryPanelProps> = ({
             left: 16,
             width: 300,
             maxHeight: 320,
-            backgroundColor: 'rgba(255, 255, 255, 0.98)',
+            backgroundColor: colors.surface,
             borderRadius: 16,
             borderWidth: 1,
-            borderColor: 'rgba(162, 143, 249, 0.3)',
-            shadowColor: '#000',
+            borderColor: colors.primaryBorder,
+            shadowColor: colors.shadow,
             shadowOffset: { width: 0, height: 6 },
             shadowOpacity: 0.25,
             shadowRadius: 12,
@@ -74,8 +74,19 @@ const ChatHistoryPanel: React.FC<ChatHistoryPanelProps> = ({
           onResponderGrant={() => {}}
           onResponderRelease={() => {}}
         >
-          <View className="p-4 flex-row justify-between items-center border-b border-gray-200">
-            <Text style={{fontFamily: 'Cormorant-SemiBold'}} className="text-xl text-black/80">Chat History</Text>
+          <View style={{
+            padding: 16,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            borderBottomWidth: 1,
+            borderBottomColor: colors.border,
+          }}>
+            <Text style={{
+              fontFamily: 'Cormorant-SemiBold',
+              fontSize: 20,
+              color: colors.textPrimary,
+            }}>Chat History</Text>
           </View>
           <View style={{ height: 220 }}>
             <ScrollView
@@ -94,18 +105,38 @@ const ChatHistoryPanel: React.FC<ChatHistoryPanelProps> = ({
             >
               <View style={{ minHeight: '100%', backgroundColor: 'transparent' }}>
                 {sessions.map((item) => (
-                  <View key={item.id} className={`flex-row items-center justify-between p-2 mx-3 my-0.5 rounded-lg border ${activeSessionId === item.id ? 'bg-[#a28ff9]/20 border-[#a28ff9]/30' : 'bg-gray-50 border-gray-100'}`}>
+                  <View key={item.id} style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: 8,
+                    marginHorizontal: 12,
+                    marginVertical: 2,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    backgroundColor: activeSessionId === item.id ? colors.primaryLight : colors.surfaceSecondary,
+                    borderColor: activeSessionId === item.id ? colors.primaryBorder : colors.borderLight,
+                  }}>
                     <Pressable
                       onPress={() => onSwitchActiveSession(item.id)}
-                      className="flex-1"
+                      style={{ flex: 1 }}
                     >
-                      <Text className="text-gray-800 font-medium text-base" numberOfLines={1}>{item.title}</Text>
+                      <Text style={{
+                        color: colors.textPrimary,
+                        fontWeight: '500',
+                        fontSize: 16,
+                      }} numberOfLines={1}>{item.title}</Text>
                     </Pressable>
                     <Pressable
                       onPress={() => onDeleteSession(item.id)}
-                      className="ml-2 p-2 rounded-full bg-red-100"
+                      style={{
+                        marginLeft: 8,
+                        padding: 8,
+                        borderRadius: 20,
+                        backgroundColor: colors.error + '20',
+                      }}
                     >
-                      <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                      <Ionicons name="trash-outline" size={16} color={colors.error} />
                     </Pressable>
                   </View>
                 ))}
