@@ -1,4 +1,4 @@
-import { View, Text, Pressable, SafeAreaView, TextInput, FlatList, KeyboardAvoidingView, Platform, Animated, Image } from 'react-native';
+import { View, Text, Pressable, SafeAreaView, TextInput, FlatList, KeyboardAvoidingView, Platform, Animated, Image, ScrollView } from 'react-native';
 import React, { useState, useRef, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import GradientBackground from '../GradientBackground';
@@ -28,7 +28,7 @@ const SUGGESTIONS = [
     { text: 'Health', icon: 'heart-outline' },
 ];
 
-const discover = () => {
+const Discover = () => {
   const [topic, setTopic] = useState('');
   const [activeFocus, setActiveFocus] = useState('Search');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -82,6 +82,11 @@ const discover = () => {
   const flatListRef = useRef<FlatList>(null);
   const floatingAnim = useRef(new Animated.Value(0)).current;
 
+  // Initialize animation value
+  useEffect(() => {
+    historyPanelAnim.setValue(0);
+  }, []);
+
   const activeMessages = sessions.find(s => s.id === activeSessionId)?.messages || [];
 
   // Auto-scroll to bottom when messages change
@@ -95,23 +100,27 @@ const discover = () => {
 
   // Floating animation for habits button
   useEffect(() => {
-    const startFloating = () => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(floatingAnim, {
-            toValue: 1,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(floatingAnim, {
-            toValue: 0,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatingAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatingAnim, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    
+    animation.start();
+    
+    // Cleanup function to stop animation on unmount
+    return () => {
+      animation.stop();
     };
-    startFloating();
   }, []);
 
   // Hardcoded suggestions for the popup
@@ -153,6 +162,13 @@ const discover = () => {
   const switchActiveSession = (sessionId: string) => {
     setActiveSessionId(sessionId);
     toggleHistoryPanel();
+  };
+
+  const deleteSession = (sessionId: string) => {
+    setSessions(prev => prev.filter(s => s.id !== sessionId));
+    if (activeSessionId === sessionId) {
+      setActiveSessionId(null);
+    }
   };
 
   const handleSendMessage = () => {
@@ -209,14 +225,29 @@ const discover = () => {
     >
       <View className="flex-1 px-4">
         <View className="flex-row justify-between items-center pt-12 pb-2 z-10">
-          <Pressable onPress={toggleHistoryPanel} className="bg-white/30 rounded-full p-3 shadow-md">
+          <Pressable 
+            onPress={toggleHistoryPanel} 
+            className="bg-white/50 rounded-full p-3"
+            accessibilityLabel="Open chat history"
+            accessibilityRole="button"
+          >
             <Ionicons name="list-outline" size={24} color="#6b7280" />
           </Pressable>
           <View className="flex-row gap-x-4">
-            <Pressable onPress={() => router.push('/habits')} className="bg-white/30 rounded-full p-3 shadow-md">
+            <Pressable 
+              onPress={() => router.push('/habits')} 
+              className="bg-white/50 rounded-full p-3"
+              accessibilityLabel="Open habits"
+              accessibilityRole="button"
+            >
               <Image source={require('../../assets/icons/cards.png')} style={{ width: 24, height: 24 }} />
             </Pressable>
-            <Pressable onPress={handleNewChat} className="bg-white/30 rounded-full p-3 shadow-md">
+            <Pressable 
+              onPress={handleNewChat} 
+              className="bg-white/50 rounded-full p-3"
+              accessibilityLabel="Start new chat"
+              accessibilityRole="button"
+            >
               <Ionicons name="add" size={24} color="#6b7280" />
             </Pressable>
           </View>
@@ -254,7 +285,7 @@ const discover = () => {
           />
           <View className="flex-row items-center gap-x-2 mr-2">
             <Ionicons name="attach" size={24} color="#6b7280" />
-            <Ionicons name="mic-outline" size={24} color="#6b7280" />
+            <Ionicons name="scan" size={22} color="#6b7280" />
             <Pressable className="bg-[#a28ff9] rounded-lg p-3" onPress={handleSendMessage}>
               <Ionicons name="paper-plane-outline" size={22} color="white" />
             </Pressable>
@@ -385,25 +416,48 @@ const discover = () => {
                 },
               ],
             }}
+            onStartShouldSetResponder={() => true}
+            onResponderGrant={() => {}}
+            onResponderRelease={() => {}}
           >
             <View className="p-4 flex-row justify-between items-center border-b border-gray-200">
               <Text style={{fontFamily: 'Cormorant-SemiBold'}} className="text-xl text-black/80">Chat History</Text>
             </View>
-            <FlatList
-              data={sessions}
-              keyExtractor={(item) => item.id}
-              style={{ maxHeight: 220 }}
-              showsVerticalScrollIndicator={true}
-              contentContainerStyle={{ paddingVertical: 4 }}
-              renderItem={({ item }) => (
-                <Pressable
-                  onPress={() => switchActiveSession(item.id)}
-                  className={`p-3 mx-3 my-1 rounded-lg border border-gray-100 ${activeSessionId === item.id ? 'bg-[#a28ff9]/20 border-[#a28ff9]/30' : 'bg-gray-50'}`}
-                >
-                  <Text className="text-gray-800 font-medium text-base" numberOfLines={1}>{item.title}</Text>
-                </Pressable>
-              )}
-            />
+            <View style={{ height: 220 }}>
+              <ScrollView
+                showsVerticalScrollIndicator={true}
+                contentContainerStyle={{ 
+                  paddingVertical: 2, 
+                  minHeight: '100%',
+                  backgroundColor: 'transparent'
+                }}
+                nestedScrollEnabled={true}
+                scrollEnabled={true}
+                bounces={true}
+                scrollEventThrottle={16}
+                decelerationRate="normal"
+                style={{ flex: 1 }}
+              >
+                <View style={{ minHeight: '100%', backgroundColor: 'transparent' }}>
+                  {sessions.map((item) => (
+                    <View key={item.id} className={`flex-row items-center justify-between p-2 mx-3 my-0.5 rounded-lg border ${activeSessionId === item.id ? 'bg-[#a28ff9]/20 border-[#a28ff9]/30' : 'bg-gray-50 border-gray-100'}`}>
+                      <Pressable
+                        onPress={() => switchActiveSession(item.id)}
+                        className="flex-1"
+                      >
+                        <Text className="text-gray-800 font-medium text-base" numberOfLines={1}>{item.title}</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => deleteSession(item.id)}
+                        className="ml-2 p-2 rounded-full bg-red-100"
+                      >
+                        <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
           </Animated.View>
         </Pressable>
       </Animated.View>
@@ -420,4 +474,4 @@ const discover = () => {
   );
 };
 
-export default discover;
+export default Discover;
