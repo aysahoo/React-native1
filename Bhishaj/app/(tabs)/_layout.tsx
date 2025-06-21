@@ -50,7 +50,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               <Ionicons
                 name={iconName}
                 size={26}
-                color={focused ? '#799dfe' : '#94a3b8'}
+                color={focused ? '#a28ff9' : '#94a3b8'}
               />
               {focused && label ? (
                 <Text style={styles.activeLabel}>{label}</Text>
@@ -66,7 +66,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#d6cfc7',
+    backgroundColor: 'transparent', 
     borderRadius: 0,
     width: '100%',
     height: 75,
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   },
   activeLabel: {
     marginLeft: 0,
-    color: '#799dfe',
+    color: '#a28ff9',
     fontWeight: '700',
     fontSize: 14,
   },

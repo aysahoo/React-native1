@@ -7,7 +7,13 @@ module.exports = {
     extend: {
       colors: {
         'primary': '#799dfe',
+        
       },
+      fontFamily: {
+        'fraunces': ["Fraunces-VariableFont_SOFT,WONK,opsz,wght"],
+        'fraunces-italic': ["Fraunces-Italic-VariableFont_SOFT,WONK,opsz,wght"],
+        'space-mono': ["SpaceMono-Regular"],
+      }
     },
   },
   plugins: [],
