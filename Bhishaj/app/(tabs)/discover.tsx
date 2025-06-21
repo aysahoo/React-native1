@@ -1,14 +1,27 @@
-import { View, Text, Pressable, SafeAreaView, TextInput, FlatList, KeyboardAvoidingView, Platform, Animated, Image, ScrollView } from 'react-native';
+import { View, Text, Pressable, SafeAreaView, TextInput, FlatList, KeyboardAvoidingView, Platform, Animated, Image, ScrollView, Alert } from 'react-native';
 import React, { useState, useRef, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import GradientBackground from '../GradientBackground';
 import { useRouter } from 'expo-router';
+import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 
+// Import components
+import ChatMessage from '../../components/ChatMessage';
+import TabBar from '../../components/TabBar';
+import AttachmentOptions from '../../components/AttachmentOptions';
+import AttachmentPreview from '../../components/AttachmentPreview';
+import ChatHistoryPanel from '../../components/ChatHistoryPanel';
 
 type Message = {
   id: string;
   text: string;
   sender: 'user' | 'bot';
+  attachment?: {
+    name: string;
+    type: string;
+    uri: string;
+  };
 };
 
 type ChatSession = {
@@ -16,11 +29,6 @@ type ChatSession = {
   title: string;
   messages: Message[];
 };
-
-const FOCUS_OPTIONS = [
-  { name: 'Search', icon: 'search' },
-  { name: 'Symptoms Checker', icon: 'pulse' },
-];
 
 const SUGGESTIONS = [
     { text: 'Medicines', icon: 'medkit-outline' },
@@ -32,6 +40,13 @@ const Discover = () => {
   const [topic, setTopic] = useState('');
   const [activeFocus, setActiveFocus] = useState('Search');
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
+  const [currentAttachments, setCurrentAttachments] = useState<Array<{
+    id: string;
+    name: string;
+    type: string;
+    uri: string;
+  }>>([]);
   const router = useRouter();
   
   const [sessions, setSessions] = useState<ChatSession[]>([
@@ -82,11 +97,6 @@ const Discover = () => {
   const flatListRef = useRef<FlatList>(null);
   const floatingAnim = useRef(new Animated.Value(0)).current;
 
-  // Initialize animation value
-  useEffect(() => {
-    historyPanelAnim.setValue(0);
-  }, []);
-
   const activeMessages = sessions.find(s => s.id === activeSessionId)?.messages || [];
 
   // Auto-scroll to bottom when messages change
@@ -97,6 +107,17 @@ const Discover = () => {
       }, 100);
     }
   }, [activeMessages]);
+
+  // Close attachment options when interacting with other elements
+  useEffect(() => {
+    if (showAttachmentOptions) {
+      const timer = setTimeout(() => {
+        setShowAttachmentOptions(false);
+      }, 3000); // Auto-close after 3 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showAttachmentOptions]);
 
   // Floating animation for habits button
   useEffect(() => {
@@ -152,6 +173,10 @@ const Discover = () => {
     setShowSuggestions(false);
   };
 
+  const handleTabSwitch = (tabName: string) => {
+    setActiveFocus(tabName);
+  };
+
   const handleNewChat = () => {
     setActiveSessionId(null);
     if (isHistoryOpen) {
@@ -171,13 +196,104 @@ const Discover = () => {
     }
   };
 
-  const handleSendMessage = () => {
-    if (!topic.trim()) return;
+  const handleAttachment = async () => {
+    setShowAttachmentOptions(!showAttachmentOptions);
+  };
 
-    const userMessage: Message = { id: `user-${Date.now()}`, text: topic, sender: 'user' };
-    const botMessage: Message = { id: `bot-${Date.now()}`, text: `I am a friendly bot, and I received this message: "${topic}". How can I assist you today?`, sender: 'bot' };
+  const handleImagePick = async () => {
+    setShowAttachmentOptions(false);
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (permissionResult.granted === false) {
+        Alert.alert('Permission Required', 'Permission to access camera roll is required!');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: 'images',
+        allowsEditing: false,
+        quality: 0.8,
+        allowsMultipleSelection: true,
+        selectionLimit: 5,
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        const newAttachments = result.assets.map((asset, index) => ({
+          id: `${Date.now()}-${index}`,
+          name: `image_${index + 1}.jpg`,
+          type: 'image',
+          uri: asset.uri,
+        }));
+        setCurrentAttachments(prev => [...prev, ...newAttachments]);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick images');
+    }
+  };
+
+  const handleDocumentPick = async () => {
+    setShowAttachmentOptions(false);
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        copyToCacheDirectory: true,
+        multiple: true,
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        const newAttachments = result.assets.map((asset, index) => ({
+          id: `${Date.now()}-${index}`,
+          name: asset.name || `document_${index + 1}`,
+          type: 'document',
+          uri: asset.uri,
+        }));
+        setCurrentAttachments(prev => [...prev, ...newAttachments]);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick documents');
+    }
+  };
+
+  const handleCameraPick = async () => {
+    setShowAttachmentOptions(false);
+    try {
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      if (permissionResult.granted === false) {
+        Alert.alert('Permission Required', 'Permission to access camera is required!');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: 'images',
+        allowsEditing: false,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        setCurrentAttachments(prev => [...prev, {
+          id: Date.now().toString(),
+          name: 'camera_photo.jpg',
+          type: 'image',
+          uri: asset.uri,
+        }]);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to take photo');
+    }
+  };
+
+  const removeAttachment = (attachmentId: string) => {
+    setCurrentAttachments(prev => prev.filter(att => att.id !== attachmentId));
+  };
+
+  const handleSendMessage = () => {
+    if (!topic.trim() && currentAttachments.length === 0) return;
+
     const currentTopic = topic;
+    const attachmentsToSend = [...currentAttachments];
     setTopic('');
+    setCurrentAttachments([]);
     setShowSuggestions(false);
 
     let currentSessionId = activeSessionId;
@@ -186,36 +302,54 @@ const Discover = () => {
       currentSessionId = `session-${Date.now()}`;
       const newSession: ChatSession = {
         id: currentSessionId,
-        title: currentTopic.substring(0, 30) + '...',
-        messages: [userMessage],
+        title: (currentTopic || (attachmentsToSend.length > 0 ? `${attachmentsToSend.length} attachments` : 'Attachment')).substring(0, 30) + '...',
+        messages: [],
       };
       setSessions(prev => [...prev, newSession]);
       setActiveSessionId(currentSessionId);
-    } else {
+    }
+
+    // Send text message if there's text
+    if (currentTopic.trim()) {
+      const textMessage: Message = {
+        id: `user-${Date.now()}`,
+        text: currentTopic,
+        sender: 'user',
+      };
       setSessions(prev => prev.map(s =>
-        s.id === currentSessionId ? { ...s, messages: [...s.messages, userMessage] } : s
+        s.id === currentSessionId ? { ...s, messages: [...s.messages, textMessage] } : s
       ));
     }
 
-    const finalSessionId = currentSessionId;
+    // Send each attachment as a separate message
+    attachmentsToSend.forEach((attachment, index) => {
+      const attachmentMessage: Message = {
+        id: `attachment-${Date.now()}-${index}`,
+        text: attachment.type === 'image' ? 'Image attached' : `Document attached: ${attachment.name}`,
+        sender: 'user',
+        attachment: attachment,
+      };
+      
+      setTimeout(() => {
+        setSessions(prev => prev.map(s =>
+          s.id === currentSessionId ? { ...s, messages: [...s.messages, attachmentMessage] } : s
+        ));
+      }, index * 200); // Stagger the messages slightly
+    });
+
+    // Bot response
+    const botMessage: Message = {
+      id: `bot-${Date.now()}`,
+      text: `I received your message${currentTopic.trim() ? `: "${currentTopic}"` : ''}${attachmentsToSend.length > 0 ? ` with ${attachmentsToSend.length} attachment${attachmentsToSend.length > 1 ? 's' : ''}.` : '.'} How can I assist you today?`,
+      sender: 'bot',
+    };
+
     setTimeout(() => {
       setSessions(prev => prev.map(s =>
-        s.id === finalSessionId ? { ...s, messages: [...s.messages, botMessage] } : s
+        s.id === currentSessionId ? { ...s, messages: [...s.messages, botMessage] } : s
       ));
-    }, 1000);
+    }, attachmentsToSend.length * 200 + 500);
   };
-
-  const renderMessage = ({ item }: { item: Message }) => (
-    <View
-      className={`py-3 px-4 my-2 rounded-2xl max-w-[80%] ${
-        item.sender === 'user' ? 'bg-[#a28ff9] self-end' : 'bg-white/60 self-start'
-      }`}
-    >
-      <Text className={item.sender === 'user' ? 'text-white' : 'text-gray-800'}>
-        {item.text}
-      </Text>
-    </View>
-  );
 
   const renderChatInterface = () => (
     <KeyboardAvoidingView
@@ -255,7 +389,7 @@ const Discover = () => {
 
         <FlatList
           data={activeMessages}
-          renderItem={renderMessage}
+          renderItem={({ item }) => <ChatMessage item={item} />}
           keyExtractor={(item) => item.id}
           className="flex-1"
           contentContainerStyle={{ paddingBottom: 10 }}
@@ -274,6 +408,11 @@ const Discover = () => {
           </View>
         )}
 
+        <AttachmentPreview 
+          attachments={currentAttachments}
+          onRemoveAttachment={removeAttachment}
+        />
+
         <View className="flex-row items-center bg-white/50 rounded-2xl p-2 mb-10">
           <TextInput
             className="flex-1 text-lg text-gray-800 p-3"
@@ -284,7 +423,17 @@ const Discover = () => {
             multiline
           />
           <View className="flex-row items-center gap-x-2 mr-2">
-            <Ionicons name="attach" size={24} color="#6b7280" />
+            <View className="relative">
+              <Pressable onPress={handleAttachment} className="p-2">
+                <Ionicons name="attach" size={24} color="#6b7280" />
+              </Pressable>
+              <AttachmentOptions
+                showAttachmentOptions={showAttachmentOptions}
+                onCameraPick={handleCameraPick}
+                onImagePick={handleImagePick}
+                onDocumentPick={handleDocumentPick}
+              />
+            </View>
             <Ionicons name="scan" size={22} color="#6b7280" />
             <Pressable className="bg-[#a28ff9] rounded-lg p-3" onPress={handleSendMessage}>
               <Ionicons name="paper-plane-outline" size={22} color="white" />
@@ -313,6 +462,10 @@ const Discover = () => {
       )}
       
       <View className="bg-white/50 rounded-2xl p-6 shadow-md mb-8">
+        <AttachmentPreview 
+          attachments={currentAttachments}
+          onRemoveAttachment={removeAttachment}
+        />
         <TextInput
           className="text-lg text-gray-800 h-20"
           style={{textAlignVertical: 'top'}}
@@ -323,20 +476,23 @@ const Discover = () => {
           multiline
         />
         <View className="flex-row justify-between items-center mt-4">
-          <View className="flex-row bg-gray-200/60 rounded-lg p-1">
-            {FOCUS_OPTIONS.map(option => (
-              <Pressable 
-                key={option.name} 
-                onPress={() => setActiveFocus(option.name)}
-                className={`p-2 rounded-md ${activeFocus === option.name ? 'bg-white shadow-sm' : ''}`}
-              >
-                <Ionicons name={option.icon as any} size={22} color={activeFocus === option.name ? '#a28ff9' : '#6b7280'} />
-              </Pressable>
-            ))}
-          </View>
+          <TabBar 
+            activeFocus={activeFocus}
+            onTabSwitch={handleTabSwitch}
+          />
           <View className="flex-row items-center gap-x-4">
             <Ionicons name="scan-outline" size={22} color="#6b7280" />
-            <Ionicons name="attach" size={22} color="#6b7280" />
+            <View className="relative">
+              <Pressable onPress={handleAttachment} className="p-2">
+                <Ionicons name="attach" size={22} color="#6b7280" />
+              </Pressable>
+              <AttachmentOptions
+                showAttachmentOptions={showAttachmentOptions}
+                onCameraPick={handleCameraPick}
+                onImagePick={handleImagePick}
+                onDocumentPick={handleDocumentPick}
+              />
+            </View>
             <Pressable className="bg-[#a28ff9] rounded-lg p-2" onPress={handleSendMessage}>
               <Ionicons name="paper-plane-outline" size={22} color="white" />
             </Pressable>
@@ -373,102 +529,20 @@ const Discover = () => {
       </View>
     </View>
   );
-  
-  const renderHistoryPanel = () => (
-    isHistoryOpen && (
-      <Animated.View
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 100,
-        }}
-      >
-        <Pressable 
-          style={{ flex: 1 }}
-          onPress={toggleHistoryPanel}
-        >
-          <Animated.View
-            style={{
-              position: 'absolute',
-              top: 100,
-              left: 16,
-              width: 300,
-              maxHeight: 320,
-              backgroundColor: 'rgba(255, 255, 255, 0.98)',
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: 'rgba(162, 143, 249, 0.3)',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: 0.25,
-              shadowRadius: 12,
-              elevation: 10,
-              opacity: historyPanelAnim,
-              transform: [
-                {
-                  scale: historyPanelAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.8, 1],
-                  }),
-                },
-              ],
-            }}
-            onStartShouldSetResponder={() => true}
-            onResponderGrant={() => {}}
-            onResponderRelease={() => {}}
-          >
-            <View className="p-4 flex-row justify-between items-center border-b border-gray-200">
-              <Text style={{fontFamily: 'Cormorant-SemiBold'}} className="text-xl text-black/80">Chat History</Text>
-            </View>
-            <View style={{ height: 220 }}>
-              <ScrollView
-                showsVerticalScrollIndicator={true}
-                contentContainerStyle={{ 
-                  paddingVertical: 2, 
-                  minHeight: '100%',
-                  backgroundColor: 'transparent'
-                }}
-                nestedScrollEnabled={true}
-                scrollEnabled={true}
-                bounces={true}
-                scrollEventThrottle={16}
-                decelerationRate="normal"
-                style={{ flex: 1 }}
-              >
-                <View style={{ minHeight: '100%', backgroundColor: 'transparent' }}>
-                  {sessions.map((item) => (
-                    <View key={item.id} className={`flex-row items-center justify-between p-2 mx-3 my-0.5 rounded-lg border ${activeSessionId === item.id ? 'bg-[#a28ff9]/20 border-[#a28ff9]/30' : 'bg-gray-50 border-gray-100'}`}>
-                      <Pressable
-                        onPress={() => switchActiveSession(item.id)}
-                        className="flex-1"
-                      >
-                        <Text className="text-gray-800 font-medium text-base" numberOfLines={1}>{item.title}</Text>
-                      </Pressable>
-                      <Pressable
-                        onPress={() => deleteSession(item.id)}
-                        className="ml-2 p-2 rounded-full bg-red-100"
-                      >
-                        <Ionicons name="trash-outline" size={16} color="#ef4444" />
-                      </Pressable>
-                    </View>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
-          </Animated.View>
-        </Pressable>
-      </Animated.View>
-    )
-  );
 
   return (
     <GradientBackground>
       <SafeAreaView style={{ flex: 1 }}>
         {activeSessionId !== null ? renderChatInterface() : renderInitialView()}
-        {renderHistoryPanel()}
+        <ChatHistoryPanel
+          isHistoryOpen={isHistoryOpen}
+          historyPanelAnim={historyPanelAnim}
+          sessions={sessions}
+          activeSessionId={activeSessionId}
+          onToggleHistoryPanel={toggleHistoryPanel}
+          onSwitchActiveSession={switchActiveSession}
+          onDeleteSession={deleteSession}
+        />
       </SafeAreaView>
     </GradientBackground>
   );
