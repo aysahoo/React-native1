@@ -549,10 +549,12 @@ const Discover = () => {
           alignItems: 'center', 
           marginTop: 16 
         }}>
-          <TabBar 
-            activeFocus={activeFocus}
-            onTabSwitch={handleTabSwitch}
-          />
+          <View style={{ alignSelf: 'center' }}>
+            <TabBar 
+              activeFocus={activeFocus}
+              onTabSwitch={handleTabSwitch}
+            />
+          </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
             <Pressable 
               onPress={() => router.push('/xray')}

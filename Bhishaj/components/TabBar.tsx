@@ -48,7 +48,8 @@ const TabBar: React.FC<TabBarProps> = ({ activeFocus, onTabSwitch }) => {
       ref={tabBarRef}
       style={{ 
         backgroundColor: colors.surfaceSecondary,
-        width: 120
+        width: 80,
+        alignSelf: 'flex-start'
       }}
       className="flex-row rounded-lg p-1 relative"
       onLayout={(event) => {
@@ -63,9 +64,9 @@ const TabBar: React.FC<TabBarProps> = ({ activeFocus, onTabSwitch }) => {
         <Animated.View
           style={{
             position: 'absolute',
-            top: 2,
-            left: 2,
-            width: tabWidth - 4,
+            top: 0,
+            left: 0,
+            width: tabWidth - 2,
             height: '100%',
             backgroundColor: colors.surface,
             borderRadius: 6,
@@ -92,11 +93,11 @@ const TabBar: React.FC<TabBarProps> = ({ activeFocus, onTabSwitch }) => {
           key={option.name} 
           onPress={() => handleTabSwitch(option.name)}
           className="p-2 rounded-md flex-1 items-center justify-center"
-          style={{ minHeight: 36 }}
+          style={{ minHeight: 32 }}
         >
           <Ionicons 
             name={option.icon as any} 
-            size={20} 
+            size={18} 
             color={activeFocus === option.name ? colors.primary : colors.textSecondary} 
           />
         </Pressable>
